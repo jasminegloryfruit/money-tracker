@@ -1,12 +1,140 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f6f1e8"><link rel="manifest" href="manifest.json"><title>我的記帳 2.0</title>
-<style>body{font-family:-apple-system,BlinkMacSystemFont,"PingFang TC",sans-serif;background:#f6f1e8;color:#302e2a;margin:0}.w{max-width:720px;margin:auto;padding:18px}.c{background:#fffdf9;border:1px solid #e7dfd3;border-radius:18px;padding:16px;margin:10px 0}.g{display:grid;grid-template-columns:1fr 1fr;gap:9px}.s{background:#fffdf9;border:1px solid #e7dfd3;border-radius:16px;padding:13px}.s small{color:#817c74}.s b{display:block;font-size:20px;margin-top:5px}input,select,button{width:100%;box-sizing:border-box;padding:11px;border:1px solid #e2dbd1;border-radius:11px;background:white;font-size:16px}label{font-size:12px;color:#817c74;display:block;margin:7px 0 4px}.btn{background:#746b5e;color:white;font-weight:bold}.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.item{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee7de}.muted{font-size:12px;color:#817c74}.good{color:#52705b}.bad{color:#ad6666}.bar{height:10px;background:#ece6dd;border-radius:99px;overflow:hidden}.fill{height:100%;background:#746b5e}@media(max-width:520px){.row{grid-template-columns:1fr}}</style></head><body><div class="w"><h1>我的記帳</h1><div class="muted">記帳 × 預算 × 存錢計畫</div>
-<div class="g"><div class="s"><small>本月收入</small><b id="inc">$0</b></div><div class="s"><small>本月支出</small><b id="exp">$0</b></div><div class="s"><small>本月還能花</small><b id="left">$0</b></div><div class="s"><small>本月已存</small><b id="sav">$0</b></div></div>
-<div class="c"><b>🎯 每月存錢計畫</b><div class="row"><div><label>月薪</label><input id="salary" type="number"></div><div><label>每月存款目標</label><input id="goal" type="number"></div></div><div class="row"><div><label>房貸</label><input id="mortgage" type="number"></div><div><label>其他固定支出</label><input id="fixed" type="number"></div></div><button id="planbtn" class="btn" style="margin-top:10px">儲存計畫</button><p id="goaltext"></p><div class="bar"><div id="fill" class="fill"></div></div><p id="hint" class="muted"></p></div>
-<div class="c"><b>＋ 新增一筆</b><div class="row"><div><label>日期</label><input id="date" type="date"></div><div><label>類型</label><select id="type"><option value="expense">支出</option><option value="income">收入</option><option value="saving">存款</option></select></div></div><div class="row"><div><label>金額</label><input id="amount" type="number"></div><div><label>分類</label><select id="cat"><option>餐飲</option><option>交通</option><option>購物</option><option>房貸</option><option>水電網路</option><option>娛樂</option><option>醫療</option><option>保險稅金</option><option>投資</option><option>薪資</option><option>獎金</option><option>存錢</option><option>其他</option></select></div></div><label>備註</label><input id="note"><button id="add" class="btn" style="margin-top:10px">新增記帳</button></div>
-<div class="c"><b>📅 月報表</b><label>查看月份</label><input id="month" type="month"><div id="summary"></div></div><div class="c"><b>明細</b><div id="list"></div><button id="export" style="margin-top:10px">匯出本月 CSV</button><p class="muted">資料儲存在你的瀏覽器內，建議每月匯出備份。</p></div>
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f1e8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="我的記帳">
+<link rel="manifest" href="manifest.json">
+<title>我的記帳 2.1</title>
+<style>
+:root{--bg:#f6f1e8;--card:#fffdf9;--ink:#302e2a;--muted:#817c74;--line:#e5ddd1;--accent:#7b7265;--good:#55725e;--bad:#ad6666}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+.w{max-width:720px;margin:auto;padding:18px 15px 90px}h1{font-size:31px;margin:5px 0 2px}.sub{color:var(--muted);margin-bottom:14px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px}.stat,.card{background:var(--card);border:1px solid var(--line);border-radius:18px}
+.stat{padding:14px}.stat small{display:block;color:var(--muted);font-size:13px}.stat b{display:block;font-size:21px;margin-top:5px}
+.card{padding:16px;margin-top:11px}.title{font-size:18px;font-weight:750;margin-bottom:10px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}label{display:block;color:var(--muted);font-size:13px;margin:7px 0 4px}
+input,select,button{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:16px;color:var(--ink)}
+button{cursor:pointer}.primary{background:var(--accent);color:white;border:0;font-weight:700}.good{color:var(--good)}.bad{color:var(--bad)}
+.progress{height:11px;background:#ece6dd;border-radius:99px;overflow:hidden;margin-top:7px}.fill{height:100%;background:var(--accent);border-radius:99px}
+.flex{display:flex;justify-content:space-between;gap:12px}.muted{font-size:12px;color:var(--muted);line-height:1.5}
+.item{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}.item:last-child{border-bottom:0}
+.pill{padding:8px 10px;background:#f2ede5;border-radius:12px;margin-top:8px}.empty{text-align:center;color:var(--muted);padding:14px}
+@media(max-width:520px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body><div class="w">
+<h1>我的記帳</h1><div class="sub">記帳 × 預算 × 存錢計畫</div>
+
+<div class="stats">
+<div class="stat"><small>今日已花</small><b id="todayExpense">$0</b></div>
+<div class="stat"><small>本月生活支出</small><b id="lifeExpense">$0</b></div>
+<div class="stat"><small>生活費還能花</small><b id="lifeLeft" class="good">$10,000</b></div>
+<div class="stat"><small>本月已存</small><b id="saved" class="good">$0</b></div>
+</div>
+
+<div class="card">
+<div class="title">🎯 每月存錢計畫</div>
+<div class="row">
+<div><label>月薪</label><input id="salary" type="number" value="50000"></div>
+<div><label>每月存款目標</label><input id="goal" type="number" value="10000"></div>
+</div>
+<div class="row">
+<div><label>房貸</label><input id="mortgage" type="number" value="23000"></div>
+<div><label>其他固定支出</label><input id="fixed" type="number" value="7000"></div>
+</div>
+<button id="planBtn" class="primary" style="margin-top:10px">儲存計畫</button>
+<div class="pill"><div class="flex"><span>每月生活費預算</span><b id="lifeBudget">$10,000</b></div></div>
+<div style="margin-top:13px" class="flex"><span>存錢進度</span><b id="goalText">$0 / $10,000</b></div>
+<div class="progress"><div id="goalBar" class="fill" style="width:0%"></div></div>
+<div id="hint" class="muted" style="margin-top:8px"></div>
+</div>
+
+<div class="card">
+<div class="title">＋ 新增一筆</div>
+<div class="row">
+<div><label>日期</label><input id="date" type="date"></div>
+<div><label>類型</label><select id="type"><option value="expense">支出</option><option value="income">收入</option><option value="saving">存款</option></select></div>
+</div>
+<div class="row">
+<div><label>金額</label><input id="amount" type="number" inputmode="numeric" placeholder="例如 150"></div>
+<div><label>分類</label><select id="category"><option>餐飲</option><option>交通</option><option>購物</option><option>娛樂</option><option>日用品</option><option>醫療</option><option>房貸</option><option>水電網路</option><option>保險稅金</option><option>投資</option><option>薪資</option><option>獎金</option><option>存錢</option><option>其他</option></select></div>
+</div>
+<label>備註</label><input id="note" placeholder="例如：午餐、加油">
+<button id="addBtn" class="primary" style="margin-top:10px">新增記帳</button>
+</div>
+
+<div class="card">
+<div class="title">📅 月底統計</div>
+<label>查看月份</label><input id="month" type="month">
+<div class="pill"><div class="flex"><span>收入</span><b id="monthIncome">$0</b></div></div>
+<div class="pill"><div class="flex"><span>全部支出</span><b id="monthExpense">$0</b></div></div>
+<div class="pill"><div class="flex"><span>固定支出紀錄</span><b id="fixedRecorded">$0</b></div></div>
+<div id="categorySummary" style="margin-top:10px"></div>
+</div>
+
+<div class="card">
+<div class="title">本月明細</div><div id="list"></div>
+<button id="exportBtn" style="margin-top:10px">匯出本月 CSV 備份</button>
+<div class="muted" style="margin-top:9px">資料只儲存在目前瀏覽器。請定期匯出 CSV；清除 Safari 網站資料可能會刪除紀錄。</div>
+</div>
+</div>
+
 <script>
-const $=x=>document.getElementById(x),K='my-money-tracker-v1',P='money-plan-v2';let r=JSON.parse(localStorage.getItem(K)||'[]'),p=JSON.parse(localStorage.getItem(P)||'{"salary":50000,"goal":10000,"mortgage":23000,"fixed":7000}');const money=n=>'$'+Math.round(n||0).toLocaleString('zh-TW');let d=new Date(),ds=d.toISOString().slice(0,10);date.value=ds;month.value=ds.slice(0,7);['salary','goal','mortgage','fixed'].forEach(k=>$(k).value=p[k]);
-function save(){localStorage.setItem(K,JSON.stringify(r));render()} planbtn.onclick=()=>{['salary','goal','mortgage','fixed'].forEach(k=>p[k]=+$((k)).value||0);localStorage.setItem(P,JSON.stringify(p));render()};add.onclick=()=>{let a=+amount.value;if(!a)return alert('請輸入金額');r.push({id:Date.now(),date:date.value,type:type.value,amount:a,category:cat.value,note:note.value});amount.value='';note.value='';save()};month.onchange=render;
-function render(){let m=month.value,x=r.filter(a=>a.date.startsWith(m)),i=x.filter(a=>a.type==='income').reduce((s,a)=>s+a.amount,0),e=x.filter(a=>a.type==='expense').reduce((s,a)=>s+a.amount,0),v=x.filter(a=>a.type==='saving').reduce((s,a)=>s+a.amount,0),budget=(i||p.salary)-p.mortgage-p.fixed-p.goal;inc.textContent=money(i);exp.textContent=money(e);sav.textContent=money(v);left.textContent=money(Math.max(0,budget-e));goaltext.textContent=`存錢進度：${money(v)} / ${money(p.goal)}`;fill.style.width=Math.min(100,p.goal?v/p.goal*100:0)+'%';hint.textContent=`扣除房貸、固定支出與存款目標後，每月生活彈性預算約 ${money(Math.max(0,budget))}。`;let c={};x.filter(a=>a.type==='expense').forEach(a=>c[a.category]=(c[a.category]||0)+a.amount);summary.innerHTML=Object.entries(c).sort((a,b)=>b[1]-a[1]).map(a=>`<div class="item"><span>${a[0]}</span><b>${money(a[1])}</b></div>`).join('')||'<p class="muted">本月尚無支出</p>';list.innerHTML=x.sort((a,b)=>b.date.localeCompare(a.date)).map(a=>`<div class="item"><span>${a.note||a.category}<div class="muted">${a.date}・${a.category}</div></span><b class="${a.type==='expense'?'bad':'good'}">${a.type==='expense'?'-':'+'}${money(a.amount)}</b></div>`).join('')||'<p class="muted">本月尚無紀錄</p>'}
-export.onclick=()=>{let x=r.filter(a=>a.date.startsWith(month.value)),rows=[['日期','類型','分類','金額','備註'],...x.map(a=>[a.date,a.type,a.category,a.amount,a.note])],csv='\ufeff'+rows.map(z=>z.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n'),u=URL.createObjectURL(new Blob([csv]));let a=document.createElement('a');a.href=u;a.download=`記帳_${month.value}.csv`;a.click()};render();
+const $=id=>document.getElementById(id);
+const RECORD_KEY='my-money-tracker-v1', PLAN_KEY='money-plan-v2';
+let records=JSON.parse(localStorage.getItem(RECORD_KEY)||'[]');
+let old=JSON.parse(localStorage.getItem(PLAN_KEY)||'{}');
+let plan={
+ salary:Number(old.salary)||50000,
+ goal:Number(old.goal||old.saveGoal)||10000,
+ mortgage:Number(old.mortgage)||23000,
+ fixed:Number(old.fixed)||7000
+};
+function localDate(d=new Date()){let y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
+function money(n){return '$'+Math.round(n||0).toLocaleString('zh-TW')}
+function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+$('date').value=localDate(); $('month').value=localDate().slice(0,7);
+['salary','goal','mortgage','fixed'].forEach(k=>$(k).value=plan[k]);
+
+$('planBtn').onclick=()=>{
+ ['salary','goal','mortgage','fixed'].forEach(k=>plan[k]=Number($(k).value)||0);
+ localStorage.setItem(PLAN_KEY,JSON.stringify(plan)); render();
+};
+$('addBtn').onclick=()=>{
+ let a=Number($('amount').value);
+ if(!a||a<=0){alert('請輸入正確金額');return}
+ records.push({id:Date.now(),date:$('date').value||localDate(),type:$('type').value,amount:a,category:$('category').value,note:$('note').value.trim()});
+ localStorage.setItem(RECORD_KEY,JSON.stringify(records)); $('amount').value='';$('note').value='';render();
+};
+$('month').onchange=render;
+
+function render(){
+ let m=$('month').value, rs=records.filter(r=>r.date&&r.date.startsWith(m));
+ let today=localDate();
+ let lifeCats=['餐飲','交通','購物','娛樂','日用品','醫療','其他'];
+ let fixedCats=['房貸','水電網路','保險稅金'];
+ let life=rs.filter(r=>r.type==='expense'&&lifeCats.includes(r.category)).reduce((s,r)=>s+r.amount,0);
+ let todayExp=records.filter(r=>r.date===today&&r.type==='expense').reduce((s,r)=>s+r.amount,0);
+ let sav=rs.filter(r=>r.type==='saving').reduce((s,r)=>s+r.amount,0);
+ let inc=rs.filter(r=>r.type==='income').reduce((s,r)=>s+r.amount,0);
+ let exp=rs.filter(r=>r.type==='expense').reduce((s,r)=>s+r.amount,0);
+ let fixedRec=rs.filter(r=>r.type==='expense'&&fixedCats.includes(r.category)).reduce((s,r)=>s+r.amount,0);
+ let budget=Math.max(0,plan.salary-plan.mortgage-plan.fixed-plan.goal);
+ $('todayExpense').textContent=money(todayExp);$('lifeExpense').textContent=money(life);$('lifeLeft').textContent=money(Math.max(0,budget-life));$('saved').textContent=money(sav);
+ $('lifeBudget').textContent=money(budget);$('goalText').textContent=`${money(sav)} / ${money(plan.goal)}`;$('goalBar').style.width=Math.min(100,plan.goal?sav/plan.goal*100:0)+'%';
+ $('hint').textContent=`月薪 ${money(plan.salary)} − 房貸 ${money(plan.mortgage)} − 其他固定支出 ${money(plan.fixed)} − 存款目標 ${money(plan.goal)} = 生活費預算 ${money(budget)}。`;
+ $('monthIncome').textContent=money(inc);$('monthExpense').textContent=money(exp);$('fixedRecorded').textContent=money(fixedRec);
+ let cats={};rs.filter(r=>r.type==='expense').forEach(r=>cats[r.category]=(cats[r.category]||0)+r.amount);
+ $('categorySummary').innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="item"><span>${esc(k)}</span><b>${money(v)}</b></div>`).join('')||'<div class="empty">本月尚無支出</div>';
+ $('list').innerHTML=rs.slice().sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id).map(r=>`<div class="item"><div><b>${esc(r.note||r.category)}</b><div class="muted">${r.date} ・ ${esc(r.category)} ・ ${r.type==='expense'?'支出':r.type==='income'?'收入':'存款'}</div></div><b class="${r.type==='expense'?'bad':'good'}">${r.type==='expense'?'-':'+'}${money(r.amount)}</b></div>`).join('')||'<div class="empty">本月尚無紀錄</div>';
+}
+$('exportBtn').onclick=()=>{
+ let m=$('month').value,rs=records.filter(r=>r.date&&r.date.startsWith(m)),rows=[['日期','類型','分類','金額','備註'],...rs.map(r=>[r.date,r.type==='expense'?'支出':r.type==='income'?'收入':'存款',r.category,r.amount,r.note])];
+ let csv='\uFEFF'+rows.map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+ let u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=u;a.download=`記帳_${m}.csv`;a.click();URL.revokeObjectURL(u);
+};
+render();
 </script></body></html>
